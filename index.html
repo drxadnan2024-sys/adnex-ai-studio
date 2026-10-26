@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adnex AI Studio — Real Video</title>
+<style>
+:root{--bg:#080b18;--panel:#11172b;--line:#273353;--text:#f4f6ff;--muted:#aab5d1;--purple:#8b5cf6;--blue:#16b9f5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#20245a 0,#080b18 45%);color:var(--text);font:16px/1.5 system-ui,sans-serif}
+header{padding:22px;border-bottom:1px solid #202943;background:#080b18bb}.wrap{max-width:980px;margin:auto}.brand{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--purple),var(--blue));display:grid;place-items:center}
+main{max-width:980px;margin:28px auto;padding:0 18px}.hero{margin:22px 0}.pill{display:inline-block;color:#d6ccff;background:#38266b;border:1px solid #5a3da2;padding:5px 11px;border-radius:30px;font-size:12px;font-weight:700}h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:14px 0}.gradient{background:linear-gradient(90deg,#b59cff,#45d7ff);color:transparent;background-clip:text}.muted{color:var(--muted)}.panel{background:#10162ae8;border:1px solid var(--line);border-radius:20px;padding:22px;margin:18px 0}
+label{display:block;font-size:13px;color:#d7def3;font-weight:650;margin:14px 0 7px}textarea,select{width:100%;border:1px solid #354365;background:#090f20;color:var(--text);border-radius:11px;padding:12px;font:inherit}textarea{min-height:130px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.btn{border:0;border-radius:12px;padding:13px 17px;font-weight:800;color:white;background:linear-gradient(100deg,var(--purple),#138cda);cursor:pointer;margin-top:16px;width:100%;font-size:15px}.btn:disabled{opacity:.55;cursor:wait}.status{margin-top:14px;border-radius:12px;padding:12px;background:#0b1122;border:1px solid #263251;white-space:pre-wrap}.error{color:#ffb4b4}.video{width:100%;max-height:600px;background:#000;border-radius:14px;margin-top:14px}.download{display:inline-block;margin-top:10px;color:#9de7ff;word-break:break-all}.small{font-size:12px;color:var(--muted)}li{margin:7px 0}a{color:#9de7ff}@media(max-width:650px){.row{grid-template-columns:1fr}}
+</style></head>
+<body><header><div class="wrap"><div class="brand"><div class="logo">▶</div> Adnex AI Studio</div><div class="muted">Real AI video generation • Text to video</div></div></header>
+<main>
+<section class="hero"><span class="pill">API CONNECTED APP TEMPLATE</span><h1>Apne idea ko <span class="gradient">AI video</span> mein badlo.</h1><p class="muted">Prompt likho aur Generate dabao. Video provider pehle task banayega, phir app status check karke finished video dikhayega.</p></section>
+<section class="panel"><h2>🎬 Generate real video</h2>
+<form id="form"><label for="prompt">Video prompt (English prompts often give better visual control)</label>
+<textarea id="prompt" required minlength="5" maxlength="1000" placeholder="A cinematic vertical video of a young woman walking through a rainy Mumbai street at night, reflections on the road, slow camera push-in, realistic lighting, emotional mood"></textarea>
+<div class="row"><div><label for="ratio">Video format</label><select id="ratio"><option value="720:1280" selected>Vertical 9:16 (Shorts/Reels)</option><option value="1280:720">Landscape 16:9</option></select></div><div><label>Clip duration</label><div class="status">5 seconds (starter setting)</div></div></div>
+<button id="submit" class="btn">Generate AI Video ✨</button></form>
+<div id="status" class="status" role="status">Ready. Video generation provider ki API key configure karne ke baad generate kar sakte ho.</div>
+<div id="output"></div><p class="small">Usage note: provider credits/billing apply ho sakte hain. Generated clip aam taur par short hoti hai; 60-second video ke liye multiple clips generate karke editor mein join karna hoga.</p>
+</section>
+<section class="panel"><h2>🛠 Setup checklist</h2><ol><li>Runway Dev account banao aur API key generate karo.</li><li>Project folder mein <code>.env.example</code> ki copy bana kar uska naam <code>.env</code> rakho.</li><li><code>.env</code> file mein apni API key paste karo.</li><li>Terminal mein <code>npm install</code> aur phir <code>npm start</code> chalao.</li><li>Browser mein <code>http://localhost:3000</code> kholo.</li></ol><p class="small">API key ko kabhi public HTML/JavaScript, GitHub repo, ya kisi chat mein paste mat karo. Is starter project ko public deploy karne se pehle login, usage limits, rate limiting aur billing protection add karna chahiye.</p></section>
+</main>
+<script>
+const form=document.getElementById('form'), statusBox=document.getElementById('status'), output=document.getElementById('output'), submit=document.getElementById('submit');
+function showStatus(t,err=false){statusBox.textContent=t;statusBox.className='status'+(err?' error':'')}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+form.addEventListener('submit',async e=>{
+ e.preventDefault(); const prompt=document.getElementById('prompt').value.trim();
+ if(prompt.length<5){showStatus('Prompt thoda aur detail mein likho.',true);return}
+ submit.disabled=true;output.replaceChildren();showStatus('Request bhej rahe hain… API key aur credits check ho rahe hain.');
+ try{
+  const start=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,ratio:document.getElementById('ratio').value})});
+  const task=await start.json();if(!start.ok)throw new Error(task.error||'Generation request fail ho gayi.');
+  if(!task.taskId)throw new Error('Provider ne task ID nahi bheji. API response check karo.');
+  showStatus('Task ID: '+task.taskId+'\nVideo generate ho raha hai. Ismein kuch waqt lag sakta hai…');
+  let finished=false;
+  for(let i=0;i<90;i++){
+   await sleep(4000);
+   const r=await fetch('/api/tasks/'+encodeURIComponent(task.taskId));const d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Task status check fail hua.');
+   const st=String(d.status||'').toUpperCase();
+   showStatus('Generation status: '+(d.status||'processing')+'\nTask ID: '+task.taskId+'\nPage khula rakho; app status check kar rahi hai.');
+   if(st==='SUCCEEDED'||st==='COMPLETED'){
+    if(!d.videoUrl)throw new Error('Task complete hua, lekin video URL response mein nahi mila.');
+    const video=document.createElement('video');video.className='video';video.controls=true;video.playsInline=true;video.src=d.videoUrl;output.appendChild(video);
+    const link=document.createElement('a');link.className='download';link.href=d.videoUrl;link.target='_blank';link.rel='noopener';link.textContent='Open / save generated video';output.appendChild(link);
+    showStatus('Success! Tumhara AI video ready hai. Video par right-click karke “Save video as…” try karo.');finished=true;break;
+   }
+   if(st==='FAILED'||st==='CANCELED'||st==='CANCELLED')throw new Error(d.failure||'Generation fail ya cancel ho gayi.');
+  }
+  if(!finished)showStatus('Task abhi complete nahi hua. Provider dashboard mein task status check karo; baad mein dobara try kar sakte ho.');
+ }catch(err){showStatus(err.message||'Unexpected error.',true)}
+ finally{submit.disabled=false}
+});
+</script></body></html>
